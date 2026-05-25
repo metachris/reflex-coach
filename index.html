@@ -620,15 +620,25 @@
       const progressEl = document.getElementById('progress');
 
       // ====== Persistent storage ======
+      function getSettingsJSON() {
+        return JSON.stringify({ min: minInterval, max: maxInterval, surprise, sound: soundType });
+      }
+
+      function applyParsedSettings(s) {
+        if (typeof s.min === 'number' && s.min >= 1 && s.min <= 999) minInterval = s.min;
+        if (typeof s.max === 'number' && s.max >= 1 && s.max <= 999) maxInterval = s.max;
+        if (typeof s.surprise === 'boolean') surprise = s.surprise;
+        if (typeof s.sound === 'string' && ['clap', 'beep', 'whistle', 'horn'].includes(s.sound)) soundType = s.sound;
+      }
+
       async function loadSettings() {
         try {
-          const res = await window.storage.get('settings');
-          if (res && res.value) {
-            const s = JSON.parse(res.value);
-            if (typeof s.min === 'number' && s.min >= 1 && s.min <= 999) minInterval = s.min;
-            if (typeof s.max === 'number' && s.max >= 1 && s.max <= 999) maxInterval = s.max;
-            if (typeof s.surprise === 'boolean') surprise = s.surprise;
-            if (typeof s.sound === 'string' && ['clap', 'beep', 'whistle', 'horn'].includes(s.sound)) soundType = s.sound;
+          if (window.storage) {
+            const res = await window.storage.get('settings');
+            if (res && res.value) applyParsedSettings(JSON.parse(res.value));
+          } else {
+            const raw = localStorage.getItem('interval-trainer-settings');
+            if (raw) applyParsedSettings(JSON.parse(raw));
           }
         } catch (e) {
           // First run / no saved settings
@@ -639,8 +649,10 @@
       }
 
       async function saveSettings() {
+        const json = getSettingsJSON();
         try {
-          await window.storage.set('settings', JSON.stringify({ min: minInterval, max: maxInterval, surprise, sound: soundType }));
+          if (window.storage) await window.storage.set('settings', json);
+          else localStorage.setItem('interval-trainer-settings', json);
         } catch (e) { /* ignore */ }
       }
 
@@ -977,6 +989,15 @@
           initAudio();
           playSound();
         });
+      });
+
+      // ====== Keyboard ======
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (running) stop();
+          else start();
+        }
       });
 
       // Init
