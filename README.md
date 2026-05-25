@@ -1,1 +1,1 @@
-# interval-timer
+# reflex-coach

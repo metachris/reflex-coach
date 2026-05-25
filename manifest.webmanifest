@@ -1,7 +1,7 @@
 {
-  "name": "Interval Trainer",
-  "short_name": "Intervals",
-  "description": "Random interval beep trainer",
+  "name": "Reflex Coach",
+  "short_name": "Reflex Coach",
+  "description": "Random interval reflex trainer",
   "start_url": "/interval-timer/",
   "scope": "/interval-timer/",
   "display": "standalone",

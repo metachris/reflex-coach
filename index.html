@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0a0a0a">
-  <title>Interval Trainer</title>
+  <title>Reflex Coach</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -521,7 +521,7 @@
 <body>
   <div class="app" id="app">
     <header>
-      <div class="brand">interval<b>:</b>trainer</div>
+      <div class="brand">reflex<b>:</b>coach</div>
       <div class="status" id="status">
         <span class="dot"></span>
         <span id="status-text">Ready</span>
@@ -571,6 +571,13 @@
       </div>
     </div>
 
+    <div class="presets" id="sound-presets">
+      <button class="preset active" data-sound="clap">Clap</button>
+      <button class="preset" data-sound="beep">Beep</button>
+      <button class="preset" data-sound="whistle">Whistle</button>
+      <button class="preset" data-sound="horn">Horn</button>
+    </div>
+
     <div class="error-msg" id="error-msg">Min must be ≤ Max</div>
 
     <button class="start-btn" id="start-btn">Start</button>
@@ -594,6 +601,7 @@
       let audioCtx = null;
       let wakeLock = null;
       let surprise = false;
+      let soundType = 'clap';
 
       // ====== DOM ======
       const app = document.getElementById('app');
@@ -620,17 +628,19 @@
             if (typeof s.min === 'number' && s.min >= 1 && s.min <= 999) minInterval = s.min;
             if (typeof s.max === 'number' && s.max >= 1 && s.max <= 999) maxInterval = s.max;
             if (typeof s.surprise === 'boolean') surprise = s.surprise;
+            if (typeof s.sound === 'string' && ['clap', 'beep', 'whistle', 'horn'].includes(s.sound)) soundType = s.sound;
           }
         } catch (e) {
           // First run / no saved settings
         }
         app.classList.toggle('surprise', surprise);
         updateValues();
+        updateSoundButtons();
       }
 
       async function saveSettings() {
         try {
-          await window.storage.set('settings', JSON.stringify({ min: minInterval, max: maxInterval, surprise }));
+          await window.storage.set('settings', JSON.stringify({ min: minInterval, max: maxInterval, surprise, sound: soundType }));
         } catch (e) { /* ignore */ }
       }
 
@@ -703,6 +713,75 @@
         noise.stop(now + dur);
 
         if (navigator.vibrate) navigator.vibrate(40);
+      }
+
+      function beepTone() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        const env = audioCtx.createGain();
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(0.8, now + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+        osc.connect(env);
+        env.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+        if (navigator.vibrate) navigator.vibrate(40);
+      }
+
+      function whistle() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.linearRampToValueAtTime(1350, now + 0.08);
+        osc.frequency.linearRampToValueAtTime(1200, now + 0.35);
+        const env = audioCtx.createGain();
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(0.7, now + 0.01);
+        env.gain.setValueAtTime(0.7, now + 0.25);
+        env.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+        osc.connect(env);
+        env.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.4);
+        if (navigator.vibrate) navigator.vibrate(40);
+      }
+
+      function horn() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = 220;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 800;
+        filter.Q.value = 2;
+        const env = audioCtx.createGain();
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(0.6, now + 0.01);
+        env.gain.setValueAtTime(0.6, now + 0.2);
+        env.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+        osc.connect(filter);
+        filter.connect(env);
+        env.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+        if (navigator.vibrate) navigator.vibrate(40);
+      }
+
+      function playSound() {
+        switch (soundType) {
+          case 'beep': beepTone(); break;
+          case 'whistle': whistle(); break;
+          case 'horn': horn(); break;
+          default: beep(); break;
+        }
       }
 
       // ====== Wake lock ======
@@ -803,7 +882,7 @@
         nextBeepAt = intervalStart + currentInterval * 1000;
         timeoutId = setTimeout(() => {
           if (!running) return;
-          beep();
+          playSound();
           beepCount++;
           lastInterval = currentInterval;
           beepCountEl.textContent = beepCount;
@@ -882,6 +961,23 @@
         saveSettings();
       };
       displayEl.addEventListener('click', toggleSurprise);
+
+      // ====== Sound presets ======
+      function updateSoundButtons() {
+        document.querySelectorAll('#sound-presets .preset').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.sound === soundType);
+        });
+      }
+
+      document.querySelectorAll('#sound-presets .preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          soundType = btn.dataset.sound;
+          updateSoundButtons();
+          saveSettings();
+          initAudio();
+          playSound();
+        });
+      });
 
       // Init
       loadSettings();
