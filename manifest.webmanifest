@@ -2,7 +2,7 @@
   "name": "Interval Trainer",
   "short_name": "Intervals",
   "description": "Random interval beep trainer",
-  "start_url": "/",
+  "start_url": "/interval-timer",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
