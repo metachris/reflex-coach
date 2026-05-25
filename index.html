@@ -764,20 +764,39 @@
       function whistle() {
         if (!audioCtx) return;
         const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1200, now);
-        osc.frequency.linearRampToValueAtTime(1350, now + 0.08);
-        osc.frequency.linearRampToValueAtTime(1200, now + 0.35);
+        const dur = 0.25;
+        // Primary tone
+        const osc1 = audioCtx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(2800, now);
+        osc1.frequency.linearRampToValueAtTime(3200, now + 0.03);
+        osc1.frequency.setValueAtTime(3200, now + 0.15);
+        osc1.frequency.linearRampToValueAtTime(2800, now + dur);
+        // Second harmonic for piercing edge
+        const osc2 = audioCtx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(5600, now);
+        osc2.frequency.linearRampToValueAtTime(6400, now + 0.03);
+        osc2.frequency.setValueAtTime(6400, now + 0.15);
+        osc2.frequency.linearRampToValueAtTime(5600, now + dur);
         const env = audioCtx.createGain();
         env.gain.setValueAtTime(0, now);
-        env.gain.linearRampToValueAtTime(0.7, now + 0.01);
-        env.gain.setValueAtTime(0.7, now + 0.25);
-        env.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-        osc.connect(env);
+        env.gain.linearRampToValueAtTime(0.7, now + 0.005);
+        env.gain.setValueAtTime(0.7, now + 0.15);
+        env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        const env2 = audioCtx.createGain();
+        env2.gain.setValueAtTime(0, now);
+        env2.gain.linearRampToValueAtTime(0.15, now + 0.005);
+        env2.gain.setValueAtTime(0.15, now + 0.15);
+        env2.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        osc1.connect(env);
+        osc2.connect(env2);
         env.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.4);
+        env2.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + dur);
+        osc2.start(now);
+        osc2.stop(now + dur);
         if (navigator.vibrate) navigator.vibrate(40);
       }
 
