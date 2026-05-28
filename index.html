@@ -142,6 +142,11 @@
     /* ====== Display panel ====== */
     .display {
       background: var(--surface);
+      background-image:
+        linear-gradient(180deg, rgba(20, 20, 20, 0.9) 0%, rgba(20, 20, 20, 0.82) 100%);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: auto;
       border: 1px solid var(--line);
       border-radius: 6px;
       padding: 24px 18px 18px;
@@ -251,6 +256,30 @@
 
     .surprise .progress {
       opacity: 0 !important;
+    }
+
+    .panthers-link {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      width: min(21vw, 98px);
+      opacity: 0.26;
+      z-index: 1;
+      transition: opacity 0.12s;
+    }
+
+    .panthers-link:hover {
+      opacity: 0.4;
+    }
+
+    .panthers-link img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .surprise .panthers-link {
+      visibility: hidden;
     }
 
     .countdown {
@@ -626,6 +655,9 @@
 
     <div class="display" id="display">
       <div class="progress" id="progress"></div>
+      <a class="panthers-link" id="panthers-link" href="https://www.panthersfightschool.at/" target="_blank" rel="noopener noreferrer" aria-label="Visit Panthers Fight School homepage">
+        <img src="https://www.panthersfightschool.at/wp-content/uploads/2024/11/cropped-Logo-CMYK-PNG-1536x1536.png" alt="Panthers Fight School logo" loading="lazy" referrerpolicy="no-referrer">
+      </a>
       <img class="surprise-img" id="surprise-img" src="https://www.panthersfightschool.at/wp-content/uploads/2025/02/IMG_2843-scaled-e1738507496595-600x600.jpeg" alt="" loading="lazy" referrerpolicy="no-referrer">
       <div class="countdown-area" id="countdown-area">
         <div class="display-label" id="display-label">Tap Start</div>
@@ -1104,12 +1136,14 @@
 
       // Tap anywhere in the display panel or the image to toggle surprise mode
       const displayEl = document.getElementById('display');
+      const panthersLink = document.getElementById('panthers-link');
       const toggleSurprise = () => {
         surprise = !surprise;
         app.classList.toggle('surprise', surprise);
         saveSettings();
       };
       displayEl.addEventListener('click', toggleSurprise);
+      panthersLink.addEventListener('click', (e) => e.stopPropagation());
 
       // ====== Bias slider ======
       const biasSlider = document.getElementById('bias-slider');
