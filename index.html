@@ -382,6 +382,65 @@
       margin-left: 2px;
     }
 
+    /* ====== Bias slider ====== */
+    .bias-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+
+    .bias-label {
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-weight: 500;
+      min-width: 36px;
+    }
+
+    .bias-label:last-child {
+      text-align: right;
+    }
+
+    #bias-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: var(--line-strong);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    #bias-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: var(--text);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    #bias-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: var(--text);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    #bias-slider:active::-webkit-slider-thumb {
+      background: var(--accent);
+      transform: scale(1.15);
+    }
+
     /* ====== Presets ====== */
     .presets {
       display: grid;
@@ -595,6 +654,12 @@
       </div>
     </div>
 
+    <div class="bias-control">
+      <span class="bias-label">Short</span>
+      <input type="range" id="bias-slider" min="-1" max="1" step="0.1" value="0">
+      <span class="bias-label">Long</span>
+    </div>
+
     <div class="presets" id="sound-presets">
       <button class="preset active" data-sound="clap">Clap</button>
       <button class="preset" data-sound="beep">Beep</button>
@@ -626,6 +691,7 @@
       let wakeLock = null;
       let surprise = false;
       let selectedSounds = ['clap'];
+      let intervalBias = 0; // -1 = short bias, 0 = neutral, 1 = long bias
 
       // ====== DOM ======
       const app = document.getElementById('app');
@@ -647,7 +713,7 @@
       const ALL_SOUNDS = ['clap', 'beep', 'whistle', 'horn'];
 
       function getSettingsJSON() {
-        return JSON.stringify({ min: minInterval, max: maxInterval, surprise, sounds: selectedSounds });
+        return JSON.stringify({ min: minInterval, max: maxInterval, surprise, sounds: selectedSounds, bias: intervalBias });
       }
 
       function applyParsedSettings(s) {
@@ -661,6 +727,7 @@
           const valid = s.sounds.filter(x => ALL_SOUNDS.includes(x));
           if (valid.length > 0) selectedSounds = valid;
         }
+        if (typeof s.bias === 'number' && s.bias >= -1 && s.bias <= 1) intervalBias = s.bias;
       }
 
       async function loadSettings() {
@@ -678,6 +745,7 @@
         app.classList.toggle('surprise', surprise);
         updateValues();
         updateSoundButtons();
+        updateBiasSlider();
       }
 
       async function saveSettings() {
@@ -941,7 +1009,10 @@
 
       // ====== Timer loop ======
       function scheduleNext() {
-        currentInterval = Math.random() * (maxInterval - minInterval) + minInterval;
+        // Apply bias: negative = short bias, positive = long bias
+        const factor = Math.pow(3, -intervalBias);
+        const biasedRandom = Math.pow(Math.random(), factor);
+        currentInterval = biasedRandom * (maxInterval - minInterval) + minInterval;
         intervalStart = performance.now();
         nextBeepAt = intervalStart + currentInterval * 1000;
         timeoutId = setTimeout(() => {
@@ -1025,6 +1096,18 @@
         saveSettings();
       };
       displayEl.addEventListener('click', toggleSurprise);
+
+      // ====== Bias slider ======
+      const biasSlider = document.getElementById('bias-slider');
+
+      function updateBiasSlider() {
+        biasSlider.value = intervalBias;
+      }
+
+      biasSlider.addEventListener('input', () => {
+        intervalBias = parseFloat(biasSlider.value);
+        saveSettings();
+      });
 
       // ====== Sound presets ======
       function updateSoundButtons() {
